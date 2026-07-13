@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathVerse Express | Epic Educational Learning Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gamePurple: '#6C5CE7',
+                        gameYellow: '#FFD200',
+                        gamePink: '#FF7675',
+                        gameGreen: '#55E6C1',
+                        gameBlue: '#74B9FF',
+                        gameDark: '#2D3436'
+                    },
+                    boxShadow: {
+                        'cartoon-sm': '0 4px 0 #2D3436',
+                        'cartoon': '0 8px 0 #2D3436',
+                        'cartoon-lg': '0 12px 0 #2D3436',
+                        'inner-cartoon': 'inset 0 4px 0 rgba(0,0,0,0.2)'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="js/app.js"></script>
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/app.css" />
+    <script src="js/sw.js"></script>
+    <script src="js/pwa.js"></script>
+
+    <link rel="shortcut icon" href="icon/app-icon.png" sizes="1024x1024" />
+    <link rel="icon" href="icon/192x192.png" sizes="192x192" />
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="bg-[#F0F3FF] text-gameDark overflow-x-hidden min-h-screen">
+
+    <!-- Global HUD Nav bar -->
+    <nav id="global-hud"
+        class="hidden fixed top-0 left-0 right-0 bg-white border-b-4 border-gameDark z-40 px-4 py-2 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="App.router.navigate('dashboard')">
+            <div
+                class="w-12 h-12 bg-gameYellow border-2 border-gameDark rounded-xl flex items-center justify-center shadow-cartoon-sm dynamic-bounce">
+                <i class="fa-solid fa-graduation-cap text-2xl text-gameDark"></i>
+            </div>
+            <span class="heading-font text-xl tracking-wide hidden sm:inline-block text-gamePurple">MATHVERSE</span>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <!-- Sync Indicator Status -->
+            <div id="sync-status"
+                class="text-xs bg-emerald-100 text-emerald-700 border-2 border-gameDark px-2 py-1 rounded-lg flex items-center gap-1 shadow-cartoon-sm">
+                <i class="fa-solid fa-cloud"></i> <span class="hidden md:inline">Synced</span>
+            </div>
+            <div
+                class="bg-orange-100 border-2 border-gameDark rounded-full px-3 py-1 flex items-center space-x-1 shadow-cartoon-sm">
+                <i class="fa-solid fa-fire text-orange-500 animate-pulse"></i>
+                <span id="hud-streak" class="text-sm sm:text-base">1 Day</span>
+            </div>
+            <div
+                class="bg-amber-100 border-2 border-gameDark rounded-full px-3 py-1 flex items-center space-x-1 shadow-cartoon-sm">
+                <i class="fa-solid fa-star text-amber-500"></i>
+                <span id="hud-stars" class="text-sm sm:text-base">0</span>
+            </div>
+            <div
+                class="bg-yellow-100 border-2 border-gameDark rounded-full px-3 py-1 flex items-center space-x-1 shadow-cartoon-sm">
+                <i class="fa-solid fa-coins text-yellow-500"></i>
+                <span id="hud-coins" class="text-sm sm:text-base">0</span>
+            </div>
+            <div
+                class="bg-purple-100 border-2 border-gameDark rounded-full px-3 py-1 flex items-center space-x-1 shadow-cartoon-sm">
+                <span class="text-xs bg-gamePurple text-white px-2 py-0.5 rounded-full" id="hud-level-tag">Lv.1</span>
+                <span id="hud-xp" class="text-sm font-bold">0 XP</span>
+            </div>
+
+            <button onclick="App.router.navigate('profile')"
+                class="w-10 h-10 rounded-full border-2 border-gameDark bg-gamePink overflow-hidden shadow-cartoon-sm flex items-center justify-center text-xl transition-transform active:scale-95"
+                id="hud-avatar-frame">
+                🐱
+            </button>
+            <button onclick="App.ui.toggleParentVerification()"
+                class="bg-gameBlue text-white border-2 border-gameDark p-2 rounded-xl text-sm shadow-cartoon-sm hover:bg-blue-400 transition-all">
+                <i class="fa-solid fa-chart-pie"></i> <span class="hidden md:inline">Parents</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Viewport -->
+    <main id="app-viewport" class="pt-24 pb-8 px-4 max-w-7xl mx-auto min-h-screen flex flex-col justify-center">
+
+        <!-- AUTH SCREEN -->
+        <section id="screen-auth"
+            class="view-panel hidden max-w-md mx-auto w-full bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon relative">
+            <div
+                class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-gameYellow border-4 border-gameDark rounded-full flex items-center justify-center shadow-cartoon">
+                <span class="text-4xl animate-bounce">🚀</span>
+            </div>
+            <div class="text-center mt-10 mb-6">
+                <h2 class="heading-font text-3xl text-gamePurple">Create Your Hero</h2>
+                <p class="text-gray-500 text-sm mt-1">Embark on your legendary cosmic math journey!</p>
+            </div>
+
+            <form id="auth-form" onsubmit="App.auth.handleRegistration(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gameDark mb-1">Hero Name</label>
+                    <input type="text" id="auth-username" required maxlength="12" placeholder="SuperSolver"
+                        class="w-full border-4 border-gameDark rounded-2xl px-4 py-3 focus:outline-none focus:ring-4 focus:ring-gamePurple/30 transition-all text-lg">
+                </div>
+
+                <div>
+                    <label class="block text-sm text-gameDark mb-2">Choose Your Companion Avatar</label>
+                    <div class="grid grid-cols-5 gap-2" id="avatar-selector-grid"></div>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-gameGreen hover:bg-emerald-400 text-gameDark border-4 border-gameDark font-bold text-xl py-4 rounded-2xl shadow-cartoon active:translate-y-1 active:shadow-cartoon-sm transition-all heading-font tracking-wide">
+                    START ADVENTURE <i class="fa-solid fa-rocket ml-1"></i>
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <button onclick="App.auth.triggerGuestMode()"
+                    class="text-gamePurple hover:underline text-sm font-bold">Or Enter as Guest Explorer</button>
+            </div>
+        </section>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="screen-dashboard" class="view-panel hidden space-y-6">
+            <div
+                class="bg-gradient-to-r from-gamePurple to-indigo-600 border-4 border-gameDark rounded-3xl p-6 text-white shadow-cartoon flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+                <div class="absolute top-0 right-0 opacity-10 text-9xl transform translate-x-10 translate-y-5">
+                    <i class="fa-solid fa-calculator"></i>
+                </div>
+                <div class="flex items-center space-x-6 z-10">
+                    <div class="w-24 h-24 bg-white border-4 border-gameDark rounded-2xl flex items-center justify-center text-5xl shadow-cartoon text-black"
+                        id="dash-avatar-icon">
+                        🐱
+                    </div>
+                    <div>
+                        <h1 class="heading-font text-3xl md:text-4xl tracking-wide mb-1">Welcome Back, <span
+                                id="dash-welcome-name">Lex</span>!</h1>
+                        <p class="text-purple-100 text-sm md:text-base max-w-xl">Your mathematical skills are changing
+                            the universe. Ready to unlock the secrets of the next world?</p>
+                        <div
+                            class="mt-4 bg-indigo-900 border-2 border-gameDark rounded-full h-6 w-full relative overflow-hidden shadow-inner-cartoon">
+                            <div id="dash-xp-progress" class="bg-gameGreen h-full transition-all duration-500"
+                                style="width: 30%"></div>
+                            <span id="dash-xp-text"
+                                class="absolute inset-0 text-xs flex items-center justify-center font-bold text-white shadow-sm">30
+                                / 100 XP</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 md:mt-0 z-10 w-full md:w-auto flex flex-col sm:flex-row gap-3">
+                    <button onclick="App.router.navigate('learning')"
+                        class="bg-gameBlue text-gameDark border-4 border-gameDark px-6 py-4 rounded-2xl shadow-cartoon font-bold text-lg heading-font hover:bg-sky-300 active:translate-y-1 active:shadow-cartoon-sm transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-book-open"></i> LEARNING HUB
+                    </button>
+                    <button onclick="App.game.initiateContinueGame()"
+                        class="bg-gameYellow text-gameDark border-4 border-gameDark px-8 py-4 rounded-2xl shadow-cartoon font-bold text-xl heading-font tracking-wider hover:bg-amber-400 active:translate-y-1 active:shadow-cartoon-sm transition-all flex items-center justify-center gap-2">
+                        CONTINUE QUEST <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- New Duel & Leaderboard Entry Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- P2P Arithmetic Duels -->
+                <div
+                    class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-3xl">⚔️</span>
+                            <h3 class="heading-font text-2xl text-gamePink">P2P Arithmetic Duels</h3>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-4">Challenge classmates to real-time WebRTC arithmetic
+                            battles and localized sprint calculation duels! Instant error correction is active to reveal
+                            paths instantly upon incorrect response entries.</p>
+
+                        <!-- Room system UI -->
+                        <div class="bg-slate-50 border-2 border-gameDark rounded-xl p-4 mb-4">
+                            <div class="grid grid-cols-2 gap-3 mb-2">
+                                <button onclick="App.multiplayer.createDuelRoom()"
+                                    class="bg-gamePurple text-white border-2 border-gameDark px-3 py-2 rounded-xl shadow-cartoon-sm hover:bg-indigo-500 font-bold text-sm">
+                                    <i class="fa-solid fa-plus mr-1"></i> Create Room
+                                </button>
+                                <div class="flex">
+                                    <input type="text" id="join-room-code" placeholder="4-Digit Code" maxlength="4"
+                                        class="w-full text-center border-y-2 border-l-2 border-gameDark rounded-l-xl uppercase font-bold text-sm">
+                                    <button onclick="App.multiplayer.joinDuelRoom()"
+                                        class="bg-gameGreen text-gameDark border-2 border-gameDark px-3 py-2 rounded-r-xl shadow-cartoon-sm hover:bg-emerald-400 font-bold text-sm">
+                                        Join
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-center text-xs text-gray-400 my-1">— OR —</div>
+                            <button onclick="App.multiplayer.matchRandomOpponent()"
+                                class="w-full bg-gameYellow text-gameDark border-2 border-gameDark py-2 rounded-xl shadow-cartoon-sm font-bold text-sm hover:bg-yellow-400">
+                                <i class="fa-solid fa-bolt mr-1"></i> Quick Instant Duel Match
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Leaderboard -->
+                <div
+                    class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-3xl">🏆</span>
+                            <h3 class="heading-font text-2xl text-gameYellow text-stroke">Global Star Leaderboard</h3>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mb-2">Privacy-compliant classifications mapped via active
+                            difficulty tiers & profile levels.</p>
+                        <div class="overflow-hidden border-2 border-gameDark rounded-xl max-h-48 overflow-y-auto mb-2"
+                            id="leaderboard-list">
+                            <!-- Populated dynamically -->
+                            <p class="text-center text-gray-400 py-4 text-sm">Loading dynamic star champions...</p>
+                        </div>
+                    </div>
+                    <button onclick="App.multiplayer.refreshLeaderboard()"
+                        class="w-full bg-slate-100 border-2 border-gameDark hover:bg-slate-200 py-2 rounded-xl text-xs font-bold shadow-cartoon-sm">
+                        <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Leaderboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Lock Dashboard & Progress Node map Layout -->
+            <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon">
+                <h3 class="heading-font text-xl text-gameDark mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-nodes text-gamePurple"></i> Multiverse Node-Map Progression Registry
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Every elemental mathematical domain begins under an ancient lock
+                    seal. Amass resources to command new maps.</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center" id="multiverse-node-map">
+                    <!-- Populated dynamically via script logic mapping -->
+                </div>
+            </div>
+
+            <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon">
+                <h3 class="heading-font text-xl text-gameDark mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-gamePink"></i> Select Calculation Difficulty Level
+                </h3>
+                <div class="grid grid-cols-3 gap-4" id="difficulty-selector-rack">
+                    <button onclick="App.game.setDifficulty('easy')" id="diff-btn-easy"
+                        class="border-4 border-gameDark rounded-xl py-3 font-bold text-lg heading-font transition-all shadow-cartoon-sm">
+                        EASY <span class="block text-xs normal-case font-sans font-normal text-gray-500">(2
+                            Digits)</span>
+                    </button>
+                    <button onclick="App.game.setDifficulty('medium')" id="diff-btn-medium"
+                        class="border-4 border-gameDark rounded-xl py-3 font-bold text-lg heading-font transition-all shadow-cartoon-sm">
+                        MEDIUM <span class="block text-xs normal-case font-sans font-normal text-gray-500">(3
+                            Digits)</span>
+                    </button>
+                    <button onclick="App.game.setDifficulty('hard')" id="diff-btn-hard"
+                        class="border-4 border-gameDark rounded-xl py-3 font-bold text-lg heading-font transition-all shadow-cartoon-sm">
+                        HARD <span class="block text-xs normal-case font-sans font-normal text-gray-500">(4
+                            Digits)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                        <h3 class="heading-font text-2xl text-gamePurple mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-globe text-gameBlue"></i> Campaign World Hub
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="world-maps-container"></div>
+                    </div>
+
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                        <h3 class="heading-font text-2xl text-gamePink mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-gameYellow"></i> Achievement Showcase Pedestal
+                        </h3>
+                        <p class="text-xs text-gray-400 mb-3">Infinite Level Progression rewards active. Pin your rarest
+                            badges here once you attain campaign Max/Mastered status milestones.</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="dashboard-achievements-rack"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Classroom Guilds Widget -->
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                        <h3 class="heading-font text-xl text-gamePurple flex items-center gap-2">
+                            <i class="fa-solid fa-people-group"></i> Classroom Guilds (v3.2)
+                        </h3>
+                        <div class="bg-purple-50 border-2 border-gameDark rounded-xl p-3 text-xs">
+                            <div class="flex justify-between font-bold text-gamePurple mb-1">
+                                <span>Cosmic Boss Raid</span>
+                                <span>342 / 500 Solved</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 border border-gameDark overflow-hidden">
+                                <div class="bg-gamePurple h-full" style="width: 68.4%"></div>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-2">Solve 500 collective questions within 24 hours to
+                                secure rewards!</p>
+                        </div>
+                        <div
+                            class="p-2 border-2 border-gameDark rounded-xl bg-slate-50 flex items-center justify-between text-xs">
+                            <span>Shared Star Hangar Bank:</span>
+                            <span class="font-bold text-yellow-600"><i class="fa-solid fa-coins"></i> 1,450 🪙</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                        <h3 class="heading-font text-2xl text-gameDark mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-gamepad text-gamePurple"></i> Match Mode
+                        </h3>
+                        <div class="space-y-3" id="game-mode-selector-rack"></div>
+                    </div>
+
+                    <!-- Offline Setup Info Block -->
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                        <h3 class="heading-font text-xl text-gameDark mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-mobile-screen-button text-gameGreen"></i> PWA App Installer
+                        </h3>
+                        <p class="text-xs text-gray-500 mb-3">Install MathVerse on your home screen to enjoy standalone
+                            offline mode with robust cache protection.</p>
+                        <button id="pwa-install-btn"
+                            class="w-full bg-gameGreen text-gameDark border-2 border-gameDark py-2.5 rounded-xl font-bold text-sm shadow-cartoon-sm hover:bg-emerald-300">
+                            Install Standalone App
+                        </button>
+                    </div>
+
+                    <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                        <h3 class="heading-font text-xl text-gameDark mb-3">Preferences</h3>
+                        <div class="space-y-3">
+                            <div
+                                class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border-2 border-gameDark">
+                                <span class="text-sm"><i class="fa-solid fa-volume-high mr-2"></i>Sound FX /
+                                    Music</span>
+                                <button onclick="App.audio.toggleMuteState()" id="audio-mute-btn"
+                                    class="bg-gameGreen px-3 py-1 text-xs border-2 border-gameDark rounded-lg shadow-cartoon-sm active:translate-y-0.5">ACTIVE</button>
+                            </div>
+                            <div
+                                class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border-2 border-gameDark">
+                                <span class="text-sm"><i class="fa-solid fa-universal-access mr-2"></i>Font
+                                    Accessibility</span>
+                                <button onclick="App.ui.toggleLargeFont()"
+                                    class="bg-gray-200 px-3 py-1 text-xs border-2 border-gameDark rounded-lg shadow-cartoon-sm">INCREASE</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MULTIPLAYER ARENA screen -->
+        <section id="screen-multiplayer" class="view-panel hidden grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon space-y-4">
+                <div class="flex justify-between items-center">
+                    <button onclick="App.multiplayer.leaveRoom()"
+                        class="bg-gamePink text-gameDark border-2 border-gameDark font-bold px-4 py-1.5 rounded-xl shadow-cartoon-sm hover:bg-rose-400 text-sm">
+                        <i class="fa-solid fa-xmark"></i> Leave
+                    </button>
+                    <div class="px-3 py-1 bg-purple-100 border-2 border-gameDark rounded-xl text-xs uppercase font-bold"
+                        id="multi-room-lbl">
+                        ROOM: ----
+                    </div>
+                </div>
+                <hr class="border-2 border-gameDark">
+
+                <!-- Duel Progress Tracking Widget -->
+                <div class="space-y-3">
+                    <div class="bg-blue-50 border-2 border-gameDark rounded-2xl p-3 shadow-cartoon-sm">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="font-bold text-gameBlue" id="multi-hero-name">You</span>
+                            <span id="multi-hero-score">0 pts</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 border border-gameDark overflow-hidden">
+                            <div id="multi-hero-bar" class="bg-gameBlue h-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-rose-50 border-2 border-gameDark rounded-2xl p-3 shadow-cartoon-sm">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="font-bold text-gamePink" id="multi-rival-name">Opponent</span>
+                            <span id="multi-rival-score">0 pts</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 border border-gameDark overflow-hidden">
+                            <div id="multi-rival-bar" class="bg-gamePink h-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs text-gray-500" id="duel-status-announcement">
+                    First to 5 correct answers wins the Cosmic Duel! Real-time answer tracking active.
+                </div>
+            </div>
+
+            <div
+                class="lg:col-span-3 bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon min-h-[450px] flex flex-col justify-between relative">
+                <!-- Instant correction header bar -->
+                <div id="multi-feedback-banner"
+                    class="hidden text-center bg-amber-100 border-2 border-gameDark rounded-xl p-2 text-xs font-bold text-amber-800">
+                    ⚠️ WRONG ANSWER DETECTED! The correct calculation target is highlighted below. Learn and adapt!
+                </div>
+                <div class="bg-purple-50 border-2 border-gameDark rounded-2xl p-3 flex items-center space-x-3 mb-4">
+                    <div class="text-3xl animate-bounce">⚔️</div>
+                    <div
+                        class="text-sm bg-white border-2 border-gameDark rounded-xl px-3 py-1.5 relative shadow-sm flex-1">
+                        <p id="multi-arena-dialogue">Solve fast! Precision and velocity fuel our orbital thrusters!</p>
+                    </div>
+                </div>
+
+                <div class="my-auto py-6 text-center space-y-6">
+                    <div
+                        class="inline-block bg-slate-50 border-4 border-gameDark rounded-3xl px-8 py-6 shadow-inner-cartoon">
+                        <h2 id="multi-arena-question-text"
+                            class="heading-font text-3xl md:text-5xl tracking-wide text-gameDark">2 + 2 = ?</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6" id="multi-arena-answers-grid"></div>
+            </div>
+        </section>
+
+        <!-- REGULAR PLAY ARENA VIEW WITH AUTO-CARRY & TUTORIAL MODULE -->
+        <section id="screen-arena" class="view-panel hidden grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon space-y-4">
+                <div class="flex justify-between items-center">
+                    <button onclick="App.game.finishCurrentGameArenaSession()"
+                        class="bg-gamePink text-gameDark border-2 border-gameDark font-bold px-4 py-1.5 rounded-xl shadow-cartoon-sm hover:bg-rose-400 text-sm transition-all">
+                        <i class="fa-solid fa-flag-checkered"></i> Finish
+                    </button>
+                    <div class="px-3 py-1 bg-gray-100 border-2 border-gameDark rounded-xl text-xs uppercase"
+                        id="arena-info-difficulty">
+                        Focus: Addition
+                    </div>
+                </div>
+                <hr class="border-2 border-gameDark">
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <div class="bg-blue-50 border-2 border-gameDark rounded-2xl p-2 shadow-cartoon-sm">
+                        <span class="text-xs block uppercase tracking-wider text-gray-500">Score</span>
+                        <span id="arena-score" class="heading-font text-xl text-gameBlue">0</span>
+                    </div>
+                    <div
+                        class="bg-purple-50 border-2 border-gameDark rounded-2xl p-2 shadow-cartoon-sm relative overflow-hidden">
+                        <span class="text-xs block uppercase tracking-wider text-gray-500">Combo</span>
+                        <span id="arena-combo" class="heading-font text-xl text-gamePurple">x1</span>
+                        <div id="combo-pulse-bg"
+                            class="absolute inset-0 bg-gamePurple opacity-0 transition-opacity pointer-events-none">
+                        </div>
+                    </div>
+                </div>
+                <div id="arena-timer-container" class="space-y-1">
+                    <div class="flex justify-between items-center text-xs">
+                        <span>Time Remaining:</span>
+                        <span id="arena-timer-text" class="font-bold">45s</span>
+                    </div>
+                    <div
+                        class="bg-gray-200 border-2 border-gameDark h-4 rounded-full overflow-hidden shadow-inner-cartoon">
+                        <div id="arena-timer-progress" class="bg-gamePink h-full transition-all duration-1000"
+                            style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 border-2 border-gameDark rounded-2xl p-3 text-center">
+                    <span class="text-xs block text-gray-500 mb-1">Continuous Progress Timeline</span>
+                    <div class="flex justify-center gap-1 flex-wrap overflow-hidden h-6 items-center"
+                        id="arena-question-dots"></div>
+                </div>
+            </div>
+
+            <!-- Arena Card upgraded with visual explanation of carry / borrow -->
+            <div class="lg:col-span-3 bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon min-h-[450px] flex flex-col justify-between relative"
+                id="arena-workspace-card">
+                <div class="bg-purple-50 border-2 border-gameDark rounded-2xl p-3 flex items-center space-x-3 mb-4">
+                    <div class="text-3xl animate-bounce" id="arena-mascot-avatar">🐱</div>
+                    <div
+                        class="text-sm bg-white border-2 border-gameDark rounded-xl px-3 py-1.5 relative shadow-sm flex-1 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <p id="arena-mascot-dialogue">Solve this math challenge to power our spaceship up!</p>
+                        <!-- Auto Carrie 1 Toggle -->
+                        <button onclick="App.game.toggleVisualCarryHelper()" id="auto-carry-btn"
+                            class="bg-gamePurple text-white border-2 border-gameDark text-xs px-3 py-1.5 rounded-lg font-bold shadow-cartoon-sm hover:bg-indigo-500 shrink-0">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Auto Carrie 1 Visualizer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Vertical 'Carry 1' Interactive Helper Module -->
+                <div id="carry-visualizer-panel"
+                    class="hidden bg-indigo-50 border-4 border-gameDark rounded-3xl p-4 my-2 text-center">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs uppercase bg-gamePurple text-white px-2 py-0.5 rounded-full"><i
+                                class="fa-solid fa-circle-info mr-1"></i> Auto Carrie 1 Step-By-Step</span>
+                        <button onclick="App.game.toggleVisualCarryHelper()" class="text-gray-500 hover:text-red-500"><i
+                                class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="carry-visualizer-content" class="flex flex-col items-center justify-center font-mono py-2">
+                        <!-- Populated with real-time column breakdowns -->
+                    </div>
+                </div>
+
+                <div class="my-auto py-6 text-center space-y-4">
+                    <div class="inline-block bg-slate-50 border-4 border-gameDark rounded-3xl px-8 py-6 shadow-inner-cartoon"
+                        id="question-box-wrapper">
+                        <h2 id="arena-question-text"
+                            class="heading-font text-3xl md:text-5xl tracking-wide text-gameDark">2 + 2 = ?</h2>
+                    </div>
+                    <p class="text-sm text-gray-400 italic" id="arena-interactive-tip">Select the single correct badge
+                        option below</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6" id="arena-answers-grid"></div>
+
+                <div
+                    class="flex flex-col sm:flex-row gap-4 justify-between items-center mt-6 pt-4 border-t-2 border-gameDark">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="App.game.triggerDynamicHint()" id="hint-button-element"
+                            class="bg-gameYellow text-gameDark border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-amber-400 transition-all text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb"></i> Use Hint (<span id="hint-count-text">3</span> Left)
+                        </button>
+                        <button onclick="App.game.purchaseHintWithCoins()" id="buy-hint-btn"
+                            class="bg-gameGreen text-gameDark border-2 border-gameDark px-3 py-2 rounded-xl shadow-cartoon-sm hover:bg-emerald-400 transition-all text-sm hidden">
+                            Buy Hint (+1 <i class="fa-solid fa-lightbulb text-amber-500"></i>) for 10 🪙
+                        </button>
+                        <button onclick="App.router.navigate('learning')"
+                            class="bg-gameBlue text-gameDark border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-sky-400 transition-all text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-question"></i> Help Technique
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-400 uppercase font-bold" id="arena-world-identifier-tag">Current
+                        World: Space World</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- LEARNING TRICKS / TECHNIQUES HUB -->
+        <section id="screen-learning" class="view-panel hidden space-y-6">
+            <div
+                class="flex justify-between items-center bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon">
+                <div>
+                    <h2 class="heading-font text-2xl text-gamePurple">Math Technique & Tricks Hub</h2>
+                    <p class="text-sm text-gray-500">Master math secrets, column carrying strategies, and bypass math
+                        confusion</p>
+                </div>
+                <button onclick="App.router.navigate('dashboard')"
+                    class="bg-gameDark text-white border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-gray-700 text-sm">
+                    Back to Dashboard <i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Carry 1 Strategy card -->
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                    <span class="text-xs uppercase bg-gamePurple text-white px-2 py-1 rounded-full font-bold">Concept
+                        1</span>
+                    <h4 class="heading-font text-xl text-gameDark">The Magic "Carry 1" Technique</h4>
+                    <p class="text-sm text-gray-600">When adding columns vertically, if the sum is **10 or more**, write
+                        the ones digit below and float the extra **1** directly to the top of the neighbor column.</p>
+                    <div class="bg-indigo-50 border-2 border-gameDark rounded-xl p-4 text-center font-mono">
+                        <div class="text-emerald-500 text-xs font-bold">(Carry the 1 here) &rarr; <span
+                                class="bg-emerald-200 px-1 rounded-full text-black">1</span></div>
+                        <div class="text-lg">1 8</div>
+                        <div class="text-lg">+ 1 5</div>
+                        <hr class="border-gameDark my-1 max-w-[80px] mx-auto border-t-2">
+                        <div class="text-lg text-gamePurple font-bold">3 3</div>
+                    </div>
+                    <p class="text-xs text-gray-400 italic">Try this inside any practice arena by clicking on the "Auto
+                        Carrie 1" button!</p>
+                </div>
+
+                <!-- Subtraction Borrowing Concept card -->
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                    <span class="text-xs uppercase bg-gamePink text-white px-2 py-1 rounded-full font-bold">Concept
+                        2</span>
+                    <h4 class="heading-font text-xl text-gameDark">The Subtraction Borrowing Hook</h4>
+                    <p class="text-sm text-gray-600">If the top digit in a column is smaller than the bottom digit,
+                        borrow a **10** from the next column to the left, which decreases that neighbor's value by 1!
+                    </p>
+                    <div class="bg-rose-50 border-2 border-gameDark rounded-xl p-4 text-center font-mono">
+                        <div class="text-lg text-gray-400 line-through">4 &rarr; 3</div>
+                        <div class="text-lg"><span class="bg-red-200 px-1 rounded-full text-black">1</span>2</div>
+                        <div class="text-lg">- 1 7</div>
+                        <hr class="border-gameDark my-1 max-w-[80px] mx-auto border-t-2">
+                        <div class="text-lg text-gamePink font-bold">2 5</div>
+                    </div>
+                </div>
+
+                <!-- Easy Multiplication trick card -->
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                    <span class="text-xs uppercase bg-gameYellow text-white px-2 py-1 rounded-full font-bold">Concept
+                        3</span>
+                    <h4 class="heading-font text-xl text-gameDark">Splitting Up Big Multipliers</h4>
+                    <p class="text-sm text-gray-600">Need to multiply large double-digit numbers quickly in your head?
+                        Split the big number up! For example:</p>
+                    <div class="bg-yellow-50 border-2 border-gameDark rounded-xl p-4 text-center">
+                        <p class="text-sm font-mono font-bold text-amber-700">12 &times; 5 is equal to:</p>
+                        <p class="text-sm font-mono mt-1">(10 &times; 5) + (2 &times; 5)</p>
+                        <p class="text-sm font-mono font-bold mt-1">50 + 10 = 60!</p>
+                    </div>
+                </div>
+
+                <!-- Master Divisions concept card -->
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                    <span class="text-xs uppercase bg-gameBlue text-white px-2 py-1 rounded-full font-bold">Concept
+                        4</span>
+                    <h4 class="heading-font text-xl text-gameDark">The Division Factoring Reversal</h4>
+                    <p class="text-sm text-gray-600">To divide any large value easily, ask yourself: *"What multiplied
+                        by the divisor gets me the dividend?"* Division is just multiplication backward!</p>
+                    <div class="bg-sky-50 border-2 border-gameDark rounded-xl p-4 text-center">
+                        <p class="text-sm font-mono font-bold text-blue-700">64 &divide; 8 = ?</p>
+                        <p class="text-sm font-mono mt-1">Flip it: ? &times; 8 = 64</p>
+                        <p class="text-sm font-mono font-bold mt-1">8 &times; 8 = 64, so the answer is 8!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PARENT VIEW WITH DIAGNOSTICS & RAW EXPORTS -->
+        <section id="screen-parent" class="view-panel hidden space-y-6">
+            <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon gap-4">
+                <div>
+                    <h2 class="heading-font text-2xl text-gamePurple">Parental Diagnostic & Analytics Dashboard</h2>
+                    <p class="text-sm text-gray-500">Real-time pedagogical metrics and tracking data based on
+                        performance profiles</p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="App.analytics.triggerAICustomDiagnosticReport()"
+                        class="bg-gamePurple text-white border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-indigo-500 text-sm">
+                        <i class="fa-solid fa-robot mr-1"></i> Export AI Recommendation
+                    </button>
+                    <button onclick="App.analytics.downloadHighFidelityPDF()"
+                        class="bg-rose-500 text-white border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-rose-600 text-sm">
+                        <i class="fa-solid fa-file-pdf mr-1"></i> Download High-Fidelity PDF Remarks
+                    </button>
+                    <button onclick="App.router.navigate('dashboard')"
+                        class="bg-gameDark text-white border-2 border-gameDark px-4 py-2 rounded-xl shadow-cartoon-sm hover:bg-gray-700 text-sm">
+                        Back to Child View <i class="fa-solid fa-right-from-bracket ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon text-center">
+                    <span class="text-xs uppercase text-gray-500 font-bold block">Total Practice Sessions</span>
+                    <span id="p-metric-sessions" class="heading-font text-3xl text-gamePurple">0</span>
+                </div>
+                <div class="bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon text-center">
+                    <span class="text-xs uppercase text-gray-500 font-bold block">Average Dynamic Accuracy</span>
+                    <span id="p-metric-accuracy" class="heading-font text-3xl text-gameGreen">0%</span>
+                </div>
+                <div class="bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon text-center">
+                    <span class="text-xs uppercase text-gray-500 font-bold block">Total Solved Challenges</span>
+                    <span id="p-metric-solved" class="heading-font text-3xl text-gameBlue">0</span>
+                </div>
+                <div class="bg-white border-4 border-gameDark rounded-2xl p-4 shadow-cartoon text-center">
+                    <span class="text-xs uppercase text-gray-500 font-bold block">Time Invested (Est.)</span>
+                    <span id="p-metric-time" class="heading-font text-3xl text-gamePink">0 mins</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon">
+                    <h3 class="heading-font text-lg text-gameDark mb-3">Topic Strengths vs Weaknesses Breakdown</h3>
+                    <div class="h-64 relative">
+                        <canvas id="parentChartCategories"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white border-4 border-gameDark rounded-3xl p-5 shadow-cartoon">
+                    <h3 class="heading-font text-lg text-gameDark mb-3">Recent Progress Tracking Timeline</h3>
+                    <div class="h-64 relative">
+                        <canvas id="parentChartTimeline"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Diagnostic AI Section Container -->
+            <div id="ai-diagnostic-export-panel"
+                class="hidden bg-gradient-to-r from-indigo-50 to-purple-50 border-4 border-gameDark rounded-3xl p-6 shadow-cartoon space-y-4">
+                <div class="flex justify-between items-center">
+                    <h4 class="heading-font text-xl text-indigo-900"><i class="fa-solid fa-circle-nodes"></i> Advanced
+                        AI Diagnostic Report</h4>
+                    <div class="flex gap-2">
+                        <button onclick="App.analytics.downloadDiagnosticReport()"
+                            class="bg-gameGreen text-gameDark border-2 border-gameDark px-3 py-1.5 rounded-lg text-xs font-bold shadow-cartoon-sm hover:bg-emerald-400">
+                            <i class="fa-solid fa-file-arrow-down mr-1"></i> Download TXT Report
+                        </button>
+                        <button onclick="App.analytics.copyDiagnosticReport()"
+                            class="bg-gameBlue text-gameDark border-2 border-gameDark px-3 py-1.5 rounded-lg text-xs font-bold shadow-cartoon-sm hover:bg-sky-400">
+                            <i class="fa-solid fa-copy mr-1"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-white border-2 border-gameDark rounded-xl p-4 text-xs font-mono text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto shadow-inner-cartoon"
+                    id="ai-diagnostic-text">
+                    Select "Generate Live Diagnostic" above to compile data streams and query Gemini AI metrics.
+                </div>
+            </div>
+
+            <div class="bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+                <h3 class="heading-font text-xl text-gameDark mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-gamePink"></i> AI Diagnostic Recommendation Matrix
+                </h3>
+                <div class="divide-y-2 divide-gray-100" id="parent-recommendations-list"></div>
+            </div>
+        </section>
+
+        <!-- PROFILE VIEW -->
+        <section id="screen-profile"
+            class="view-panel hidden max-w-xl mx-auto w-full bg-white border-4 border-gameDark rounded-3xl p-6 shadow-cartoon">
+            <h2 class="heading-font text-2xl text-gamePurple text-center mb-4">Edit Explorer Profile</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm mb-1">Update Character Name</label>
+                    <input type="text" id="profile-name-input"
+                        class="w-full border-4 border-gameDark rounded-xl p-2 font-bold">
+                </div>
+                <div>
+                    <label class="block text-sm mb-2">Change Avatar Companion</label>
+                    <div class="grid grid-cols-5 gap-2" id="profile-avatar-grid"></div>
+                </div>
+                <hr class="border-2 border-gameDark my-2">
+                <button onclick="App.auth.saveProfileEdits()"
+                    class="w-full bg-gameGreen border-2 border-gameDark py-2 rounded-xl shadow-cartoon-sm font-bold uppercase tracking-wider">Save
+                    Configuration Changes</button>
+                <button onclick="App.auth.resetAllGameData()"
+                    class="w-full bg-gamePink text-white border-2 border-gameDark py-2 rounded-xl shadow-cartoon-sm font-bold text-xs uppercase tracking-wider mt-4">Wipe
+                    All Account Progress</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CELEBRATION / REWARD MODAL -->
+    <div id="reward-modal"
+        class="fixed inset-0 bg-gameDark/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="reward-modal-card"
+            class="bg-white border-4 border-gameDark rounded-3xl max-w-sm w-full p-6 shadow-cartoon-lg text-center transform scale-90 opacity-0 transition-all duration-300">
+            <div class="text-6xl mb-2 animate-bounce" id="reward-modal-icon">🏆</div>
+            <h3 class="heading-font text-2xl text-gamePurple mb-1" id="reward-modal-title">Level Up!</h3>
+            <p class="text-sm text-gray-500 mb-4" id="reward-modal-desc">Fantastic! You completed the challenge cleanly.
+            </p>
+
+            <div
+                class="bg-gray-50 border-2 border-gameDark rounded-2xl p-3 grid grid-cols-3 gap-2 mb-4 font-bold text-sm">
+                <div class="text-amber-600"><i class="fa-solid fa-star"></i> <span id="reward-gain-stars">+0</span>
+                </div>
+                <div class="text-yellow-600"><i class="fa-solid fa-coins"></i> <span id="reward-gain-coins">+0</span>
+                </div>
+                <div class="text-purple-600"><i class="fa-solid fa-bolt"></i> <span id="reward-gain-xp">+0 XP</span>
+                </div>
+            </div>
+
+            <button onclick="App.ui.closeRewardModal()"
+                class="w-full bg-gameYellow text-gameDark border-2 border-gameDark py-2 rounded-xl font-bold heading-font shadow-cartoon-sm active:translate-y-0.5 transition-all">
+                AWESOME! <i class="fa-solid fa-thumbs-up"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PARENT PROTECTION / SECURITY VERIFICATION GATE -->
+    <div id="parent-gate-modal"
+        class="fixed inset-0 bg-gameDark/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white border-4 border-gameDark rounded-3xl max-w-sm w-full p-6 shadow-cartoon-lg">
+            <div class="text-center mb-4">
+                <div
+                    class="w-12 h-12 bg-gamePink rounded-full flex items-center justify-center text-white mx-auto border-2 border-gameDark mb-2 shadow-cartoon-sm">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h4 class="heading-font text-xl text-gameDark">Adult Verification Gate</h4>
+                <p class="text-xs text-gray-400 mt-0.5">Please solve this security prompt to access data dashboards.</p>
+            </div>
+            <div class="bg-slate-100 border-2 border-gameDark p-4 rounded-xl text-center text-xl font-bold mb-4"
+                id="parent-gate-question">
+                7 x 8 = ?
+            </div>
+            <input type="number" id="parent-gate-answer" placeholder="Your Answer"
+                class="w-full border-4 border-gameDark rounded-xl p-2 text-center text-lg mb-4 focus:outline-none font-bold">
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="App.ui.closeParentVerification()"
+                    class="bg-gray-200 border-2 border-gameDark py-2 rounded-xl font-bold text-xs">CANCEL</button>
+                <button onclick="App.ui.verifyParentGateSubmit()"
+                    class="bg-gameGreen border-2 border-gameDark py-2 rounded-xl font-bold text-xs shadow-cartoon-sm">PROCEED</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
