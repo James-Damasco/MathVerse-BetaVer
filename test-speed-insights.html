@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Speed Insights</title>
+    <script src="js/speed-insights.js"></script>
+</head>
+<body>
+    <h1>Testing Speed Insights</h1>
+    <script>
+        setTimeout(() => {
+            if (window.si) {
+                console.log('✓ Speed Insights queue initialized successfully');
+                document.body.innerHTML += '<p style="color: green;">✓ Speed Insights queue initialized successfully</p>';
+            } else {
+                console.log('✗ Speed Insights not initialized');
+                document.body.innerHTML += '<p style="color: red;">✗ Speed Insights not initialized</p>';
+            }
+            
+            const script = document.querySelector('script[src*="speed-insights/script.js"]');
+            if (script) {
+                console.log('✓ Speed Insights script tag added to DOM');
+                document.body.innerHTML += '<p style="color: green;">✓ Speed Insights script tag added to DOM</p>';
+            } else {
+                console.log('✗ Speed Insights script tag not found');
+                document.body.innerHTML += '<p style="color: red;">✗ Speed Insights script tag not found</p>';
+            }
+        }, 100);
+    </script>
+</body>
+</html>
