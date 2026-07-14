@@ -1,0 +1,28 @@
+{
+  "name": "mathverse-express",
+  "version": "1.0.0",
+  "description": "An epic production-grade educational game mapping multi-digit mathematical exploration paths",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/James-Damasco/MathVerse-BetaVer.git"
+  },
+  "keywords": [
+    "education",
+    "math",
+    "game",
+    "learning"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/James-Damasco/MathVerse-BetaVer/issues"
+  },
+  "homepage": "https://github.com/James-Damasco/MathVerse-BetaVer#readme",
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
+  }
+}
